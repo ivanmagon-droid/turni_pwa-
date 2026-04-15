@@ -3,7 +3,7 @@
 //  Strategia: Cache-First con Network Fallback
 // ══════════════════════════════════════════════════════
 
-const CACHE_NAME = 'turni-ivan-v1';
+const CACHE_NAME = 'turni-ivan-v4';
 const ASSETS = [
   './index.html',
   './manifest.json',

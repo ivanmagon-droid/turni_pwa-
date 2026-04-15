@@ -54,18 +54,19 @@ header p{font-size:.7rem;opacity:.75;margin-top:1px}
 
 /* ── CALENDAR ── */
 .cal-hdr{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:2px}
-.cal-dn{text-align:center;font-size:.6rem;font-weight:700;color:#757575;padding:3px 0;text-transform:uppercase}
+.cal-dn{text-align:center;font-size:.68rem;font-weight:700;color:#757575;padding:4px 0;text-transform:uppercase}
 .cal-dn.we{color:#c62828}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
-.cal-cell{background:#fff;border-radius:7px;min-height:54px;padding:3px;display:flex;flex-direction:column;align-items:center;border:1.5px solid transparent;cursor:pointer;position:relative;transition:transform .1s}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-cell{background:#fff;border-radius:8px;min-height:86px;padding:5px 3px;display:flex;flex-direction:column;align-items:center;border:1.5px solid transparent;cursor:pointer;position:relative;transition:transform .1s}
 .cal-cell:active{transform:scale(.94)}
 .cal-cell.empty{background:transparent;border-color:transparent;cursor:default}
 .cal-cell.today{border-color:var(--today)!important;box-shadow:0 0 0 1px var(--today)}
-.cal-cell.modified::after{content:'•';position:absolute;top:2px;right:4px;font-size:.65rem;color:#7c4dff;font-weight:900}
-.day-num{font-size:.78rem;font-weight:700;color:#424242;line-height:1.2}
+.cal-cell.modified::after{content:'•';position:absolute;top:2px;right:4px;font-size:.7rem;color:#7c4dff;font-weight:900}
+.day-num{font-size:1rem;font-weight:700;color:#424242;line-height:1.3}
 .we .day-num{color:#c62828}
 .today .day-num{color:var(--today)}
-.sbadge{font-size:.6rem;font-weight:800;border-radius:4px;padding:2px 4px;text-align:center;width:100%;margin-top:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sbadge{font-size:.75rem;font-weight:800;border-radius:4px;padding:4px 5px;text-align:center;width:100%;margin-top:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-note{font-size:.6rem;font-weight:700;text-align:center;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.9;margin-top:2px;line-height:1.2;color:#4527a0}
 .s-E{background:var(--E-bg);color:var(--E-text);border:1px solid var(--E-border)}
 .s-L{background:var(--L-bg);color:var(--L-text);border:1px solid var(--L-border)}
 .s-N{background:var(--N-bg);color:var(--N-text);border:1px solid var(--N-border)}
@@ -196,12 +197,30 @@ header p{font-size:.7rem;opacity:.75;margin-top:1px}
   <div class="next-card" id="nextCard"></div>
   <div class="import-card">
     <h3>🔄 Importa Turni da Google Sheet</h3>
-    <div class="import-url" id="csvUrlDisplay">https://docs.google.com/spreadsheets/d/1NA2Zus7hAsXtHK_UJoC-UaXDSkwVhp1B-yQOIGjZX00/export?format=csv&amp;gid=524394576</div>
+
+    <!-- Istruzioni rapide -->
+    <div style="background:#fff3e0;border-radius:7px;padding:9px 11px;margin-bottom:10px;font-size:.72rem;color:#e65100;line-height:1.55">
+      <strong>⚠️ Prima di importare:</strong> in Google Sheets vai su
+      <strong>File → Condividi → Pubblica sul Web</strong>, scegli il foglio
+      dei turni, formato <strong>CSV</strong>, poi clicca <em>Pubblica</em>.
+      Copia l'URL che appare e incollalo qui sotto.
+    </div>
+
+    <!-- Campo URL personalizzato -->
+    <div style="margin-bottom:8px">
+      <label style="font-size:.68rem;font-weight:700;color:#9e9e9e;display:block;margin-bottom:4px">URL foglio CSV (da "Pubblica sul Web")</label>
+      <input id="csvUrlInput" type="url"
+        style="width:100%;border:1.5px solid #e0e0e0;border-radius:7px;padding:7px 9px;font-size:.68rem;font-family:monospace;color:#424242;outline:none;background:#fafafa"
+        placeholder="https://docs.google.com/spreadsheets/d/…/pub?output=csv&gid=…"
+        oninput="saveCsvUrl(this.value)">
+      <p style="font-size:.62rem;color:#9e9e9e;margin-top:4px">💡 Puoi incollare qualsiasi link al foglio — l'app lo converte automaticamente nel formato CSV corretto.</p>
+    </div>
+
     <button class="btn-import" onclick="importCSV()">
       <span>⬇️</span> Importa &amp; Aggiorna Turni
     </button>
     <div class="import-status" id="importStatus"></div>
-    <p style="font-size:.7rem;color:#bdbdbd;margin-top:8px">Aggiorna i turni base direttamente dal foglio Google. Richiede connessione e accesso al foglio. Le tue modifiche personali vengono mantenute.</p>
+    <p style="font-size:.68rem;color:#bdbdbd;margin-top:8px">Le tue modifiche personali vengono mantenute durante l'import.</p>
   </div>
   <div class="info-card">
     <h3>Legenda Turni</h3>
@@ -338,10 +357,47 @@ const BASE_RAW = [
 ["01/02/27","E"],["02/02/27","E"],["03/02/27","E"],["04/02/27","R"],["05/02/27","E"],["06/02/27","E"]
 ];
 
-const CSV_URL = 'https://docs.google.com/spreadsheets/d/1NA2Zus7hAsXtHK_UJoC-UaXDSkwVhp1B-yQOIGjZX00/export?format=csv&gid=524394576';
-const LS_BASE = 'ivan_base_v2';
-const LS_OVRD = 'ivan_overrides_v2';
-const LS_TS   = 'ivan_import_ts';
+// URL pubblicato tramite "Pubblica sul Web" → CSV (non richiede login Google)
+const CSV_URL     = 'https://docs.google.com/spreadsheets/d/1AaMyftvbgDfcaNgum5mXY-cbAUqdO41tq_kktHwtjKU/export?format=csv&gid=1374162084';
+const CSV_URL_PUB = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vREjVV7PYSNXH51yMkE78NP8x9zLP3Rg5AwjETKCHQ0nTNIMrA2Zr2RgUZ4jWOOil9CtuPvRTSVXGBZ/pub?gid=1374162084&single=true&output=csv';
+const LS_BASE     = 'ivan_base_v2';
+const LS_OVRD     = 'ivan_overrides_v2';
+const LS_TS       = 'ivan_import_ts';
+const LS_CSVURL   = 'ivan_csv_url';
+
+// Converte URL Google Sheets (edit, view, share) → pub?output=csv
+// Se l'URL contiene già output=csv lo lascia invariato
+function normalizeCsvUrl(url) {
+  if (!url) return url;
+  // URL già valido (contiene output=csv o output=csv già nel path /pub)
+  if (url.includes('output=csv')) return url;
+  // URL di tipo /d/e/ (già pubblicato, ma senza output=csv — raro)
+  if (url.includes('/spreadsheets/d/e/')) return url;
+  // Converti URL edit/view → pub CSV usando l'ID documento
+  const m = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+  if (!m) return url;
+  const id = m[1];
+  const gidM = url.match(/[?&#]gid=(\d+)/);
+  const gid = gidM ? gidM[1] : '0';
+  return `https://docs.google.com/spreadsheets/d/${id}/pub?output=csv&gid=${gid}`;
+}
+function saveCsvUrl(val) {
+  if(val && val.startsWith('http')) localStorage.setItem(LS_CSVURL, normalizeCsvUrl(val.trim()));
+  else localStorage.removeItem(LS_CSVURL);
+}
+function getEffectiveCsvUrl() {
+  return normalizeCsvUrl(localStorage.getItem(LS_CSVURL) || CSV_URL_PUB);
+}
+function initCsvUrlInput() {
+  let saved = localStorage.getItem(LS_CSVURL);
+  // Se l'URL salvato non contiene output=csv (es. URL di modifica), resettalo
+  if (saved && !saved.includes('output=csv') && !saved.includes('/d/e/')) {
+    localStorage.removeItem(LS_CSVURL);
+    saved = null;
+  }
+  const el = document.getElementById('csvUrlInput');
+  if(el) el.value = saved || '';
+}
 
 // ══════════════════════════════════════════════════════════════
 //  DATA LAYER
@@ -376,13 +432,32 @@ function saveBase() {
   localStorage.setItem(LS_BASE, JSON.stringify(baseMap));
 }
 
+// Parse a raw CSV cell → { code, note }
+// Examples: "C" → {C,''}, "L Ok" → {L,''}, "Antincendio" → {C,'Antincendio'}, "PA" → {P,'PA'}
+function parseRawShift(raw) {
+  if (!raw) return { code:'', note:'' };
+  const t = raw.trim();
+  if (!t) return { code:'', note:'' };
+  const CODES = ['E','L','N','R','C','F','P','M'];
+  const first = t[0].toUpperCase();
+  if (CODES.includes(first)) {
+    const rest = t.slice(1).trim();
+    // Ignore trivial suffixes like "Ok", "OK"
+    if (!rest || rest.toLowerCase()==='ok') return { code:first, note:'' };
+    // Keep the rest as note (e.g. "PA" → {P,'PA'})
+    return { code:first, note:rest };
+  }
+  // Text doesn't start with a shift code (e.g. "Antincendio") → C shift + note
+  return { code:'C', note:t };
+}
+
 // Effective shift for a date key
 function effectiveShift(key) {
   if (overrides[key]) return { code: overrides[key].code, note: overrides[key].note, isOverride: true };
   const b = baseMap[key];
   if (!b && b !== '') return null;
-  const code = b ? b[0].toUpperCase() : '';
-  return { code, note: '', isOverride: false, raw: b };
+  const parsed = parseRawShift(b);
+  return { code: parsed.code, note: parsed.note, isOverride: false, raw: b };
 }
 
 function shiftCode(key) {
@@ -479,8 +554,10 @@ function renderCalendar() {
       cell.style.borderColor=`var(--${code}-border)`;
       cell.style.background=`var(--${code}-bg)`;
     }
+    const note=eff?eff.note:'';
     cell.innerHTML=`<div class="day-num">${d}</div>`+
-      (code?`<div class="sbadge s-${code}">${code}</div>`:'');
+      (code?`<div class="sbadge s-${code}">${code}</div>`:'') +
+      (note?`<div class="cal-note">nota: ${note}</div>`:'');
     cell.addEventListener('click',()=>openEdit(key,`${String(d).padStart(2,'0')}/${String(curMonth+1).padStart(2,'0')}/${curYear}`));
     grid.appendChild(cell);
   }
@@ -512,12 +589,13 @@ function renderWeek() {
       const meta=smeta(code);
       const row=document.createElement('div');
       row.className='day-row'+(isWE?' we-row':'')+(isToday?' today-row':'')+(isMod?' modified-row':'');
+      const enote=eff?eff.note:'';
       row.innerHTML=`<span class="dr-dn">${DAYS_S[(d+1)%7]}</span>`+
         `<span class="dr-dt">${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}</span>`+
-        (code?`<span class="dr-badge s-${code}">${code}</span><span class="dr-name">${meta.name}</span>`+
-          (isMod&&baseMap[key]?`<span class="dr-orig">${baseMap[key]?baseMap[key][0].toUpperCase():''}</span>`:'')
+        (code?`<span class="dr-badge s-${code}">${code}</span>`+
+          `<span class="dr-name">${meta.name}${enote?', <span style="font-size:.65rem;color:#4527a0;font-weight:700">note: '+enote+'</span>':''}</span>`+
+          (isMod&&baseMap[key]?`<span class="dr-orig">${parseRawShift(baseMap[key]).code}</span>`:'')
         :`<span class="dr-name" style="color:#bdbdbd">Nessun dato</span>`);
-      if(eff&&eff.note){row.innerHTML+=`<span style="font-size:.6rem;color:#9e9e9e;font-style:italic">📝</span>`;}
       row.addEventListener('click',()=>openEdit(key,`${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}/${dt.getFullYear()}`));
       wd.appendChild(row);
     }
@@ -579,49 +657,79 @@ async function importCSV() {
   const st=document.getElementById('importStatus');
   st.className='import-status loading';
   st.textContent='⏳ Connessione al foglio Google…';
+  function parseCSVLine(line){
+    const res=[]; let cur=''; let inQ=false;
+    for(let i=0;i<line.length;i++){
+      const ch=line[i];
+      if(ch==='"'){inQ=!inQ;}
+      else if(ch===','&&!inQ){res.push(cur);cur='';}
+      else{cur+=ch;}
+    }
+    res.push(cur); return res;
+  }
+  // Fetch helpers: tenta diretta + 2 proxy con l'URL scelto dall'utente
+  async function fetchCSV(primaryUrl) {
+    const isCSV = t => t && t.length > 50 && !t.trimStart().startsWith('<');
+
+    const attempts = [
+      { label:'⏳ Connessione diretta…',       fn: () => fetch(primaryUrl, {cache:'no-cache'}) },
+      { label:'⏳ Proxy 1 (corsproxy.io)…',    fn: () => fetch('https://corsproxy.io/?'+encodeURIComponent(primaryUrl), {cache:'no-cache'}) },
+      { label:'⏳ Proxy 2 (allorigins)…',      fn: () => fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(primaryUrl), {cache:'no-cache'}) },
+    ];
+
+    for(const {label, fn} of attempts) {
+      try {
+        st.textContent = label;
+        const resp = await fn();
+        if(!resp.ok) continue;
+        const text = await resp.text();
+        if(isCSV(text)) return text;
+      } catch(e) { /* prossimo tentativo */ }
+    }
+
+    throw new Error('Foglio non raggiungibile. Verifica l\'URL qui sopra (deve essere formato CSV "Pubblica sul Web") e riprova.');
+  }
+
   try {
-    const r=await fetch(CSV_URL, {credentials:'include'});
-    if(!r.ok) throw new Error(`HTTP ${r.status}`);
-    const text=await r.text();
-    const lines=text.split('\n');
-    function parseCSVLine(line){
-      const res=[]; let cur=''; let inQ=false;
-      for(let i=0;i<line.length;i++){
-        const ch=line[i];
-        if(ch==='"'){inQ=!inQ;}
-        else if(ch===','&&!inQ){res.push(cur);cur='';}
-        else{cur+=ch;}
-      }
-      res.push(cur); return res;
+    st.textContent='⏳ Connessione al foglio Google…';
+    const userUrl = document.getElementById('csvUrlInput')?.value?.trim();
+    const rawUrl = (userUrl && userUrl.startsWith('http')) ? userUrl : getEffectiveCsvUrl();
+    const urlToUse = normalizeCsvUrl(rawUrl);
+    // Aggiorna sempre il campo con l'URL normalizzato (converti /edit → /pub?output=csv)
+    const urlInput = document.getElementById('csvUrlInput');
+    if(urlInput) { urlInput.value = urlToUse; saveCsvUrl(urlToUse); }
+    const text = await fetchCSV(urlToUse);
+    const lines = text.split('\n');
+
+    // Find the row containing dates (DD/MM/YY pattern) — scan all rows
+    let dateRowIdx = -1;
+    for(let i=0;i<Math.min(lines.length,10);i++){
+      if(lines[i].match(/\d{2}\/\d{2}\/\d{2}/)){dateRowIdx=i;break;}
     }
-    const row0=parseCSVLine(lines[0]);
-    const row1=parseCSVLine(lines[1]);
-    const row2=parseCSVLine(lines[2]);
-    const ivanIdx=lines.findIndex(l=>l.toLowerCase().includes('ivan magon'));
-    if(ivanIdx<0) throw new Error('Riga Ivan Magon non trovata nel CSV');
-    const ivanRow=parseCSVLine(lines[ivanIdx]);
-    // Find WK15 2026 start col (date 05/04/26 onwards)
+    if(dateRowIdx<0) throw new Error('Struttura date non trovata nel CSV (formato DD/MM/YY)');
+    const dateRow = parseCSVLine(lines[dateRowIdx]);
+
+    // Find Ivan row (case-insensitive, anywhere in file)
+    const ivanIdx = lines.findIndex(l=>l.toLowerCase().includes('ivan magon'));
+    if(ivanIdx<0) throw new Error('Riga "Ivan Magon" non trovata nel CSV');
+    const ivanRow = parseCSVLine(lines[ivanIdx]);
+
+    // Find first column with a date
     let startCol=-1;
-    for(let i=0;i<row2.length;i++){
-      if(row2[i].trim()==='05/04/26'){startCol=i;break;}
+    for(let i=0;i<dateRow.length;i++){
+      if(dateRow[i].trim().match(/\d{2}\/\d{2}\/\d{2}/)){startCol=i;break;}
     }
-    if(startCol<0){
-      // fallback: find first date >= 05/04/26
-      for(let i=0;i<row2.length;i++){
-        const dt=row2[i].trim();
-        if(dt.match(/\d{2}\/\d{2}\/\d{2}/)){startCol=i;break;}
-      }
-    }
-    if(startCol<0) throw new Error('Struttura date non trovata nel CSV');
+    if(startCol<0) throw new Error('Nessuna data valida trovata nella riga date');
+
     const newBase={};
-    for(let col=startCol;col<Math.min(row2.length,ivanRow.length);col++){
-      const dt=row2[col].trim();
+    for(let col=startCol;col<Math.min(dateRow.length,ivanRow.length);col++){
+      const dt=dateRow[col].trim();
       if(!dt.match(/\d{2}\/\d{2}\/\d{2}/)) continue;
       const key=rawToKey(dt);
       newBase[key]=(ivanRow[col]||'').trim();
     }
     const count=Object.keys(newBase).length;
-    if(count<10) throw new Error('Troppo pochi dati: '+count+' giorni');
+    if(count<10) throw new Error('Troppo pochi dati: solo '+count+' giorni trovati');
     baseMap=newBase;
     saveBase();
     localStorage.setItem(LS_TS, Date.now().toString());
@@ -631,7 +739,14 @@ async function importCSV() {
     if(curTab===1) renderWeek();
   } catch(e) {
     st.className='import-status err';
-    st.textContent=`❌ Errore: ${e.message}. Assicurati di essere connesso e loggato in Google.`;
+    st.textContent=`❌ ${e.message}`;
+    // Assicura che il campo URL sia visibile e modificabile per correggere
+    const urlInput = document.getElementById('csvUrlInput');
+    if(urlInput) {
+      urlInput.style.borderColor='#ef5350';
+      urlInput.focus();
+      urlInput.style.borderColor='';
+    }
   }
 }
 
@@ -779,6 +894,7 @@ function requestDelete() {
 // ══════════════════════════════════════════════════════════════
 loadData();
 renderCalendar();
+initCsvUrlInput();
 
 // ══════════════════════════════════════════════════════════════
 //  PWA – Service Worker & Install Banner
