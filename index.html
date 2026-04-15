@@ -557,7 +557,7 @@ function renderCalendar() {
     const note=eff?eff.note:'';
     cell.innerHTML=`<div class="day-num">${d}</div>`+
       (code?`<div class="sbadge s-${code}">${code}</div>`:'') +
-      (note?`<div class="cal-note">nota: ${note}</div>`:'');
+      (note?`<div class="cal-note">${note}</div>`:'');
     cell.addEventListener('click',()=>openEdit(key,`${String(d).padStart(2,'0')}/${String(curMonth+1).padStart(2,'0')}/${curYear}`));
     grid.appendChild(cell);
   }
@@ -593,7 +593,7 @@ function renderWeek() {
       row.innerHTML=`<span class="dr-dn">${DAYS_S[(d+1)%7]}</span>`+
         `<span class="dr-dt">${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}</span>`+
         (code?`<span class="dr-badge s-${code}">${code}</span>`+
-          `<span class="dr-name">${meta.name}${enote?', <span style="font-size:.65rem;color:#4527a0;font-weight:700">note: '+enote+'</span>':''}</span>`+
+          `<span class="dr-name">${meta.name}${enote?', <span style="font-size:.65rem;color:#4527a0;font-weight:700">'+enote+'</span>':''}</span>`+
           (isMod&&baseMap[key]?`<span class="dr-orig">${parseRawShift(baseMap[key]).code}</span>`:'')
         :`<span class="dr-name" style="color:#bdbdbd">Nessun dato</span>`);
       row.addEventListener('click',()=>openEdit(key,`${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}/${dt.getFullYear()}`));
