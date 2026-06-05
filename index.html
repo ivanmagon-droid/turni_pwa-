@@ -196,28 +196,27 @@ header p{font-size:.7rem;opacity:.75;margin-top:1px}
 <div id="viewInfo" class="view">
   <div class="next-card" id="nextCard"></div>
   <div class="import-card">
-    <h3>🔄 Importa Turni da Google Sheet</h3>
+    <h3>📂 Importa Turni da file CSV</h3>
 
     <!-- Istruzioni rapide -->
-    <div style="background:#fff3e0;border-radius:7px;padding:9px 11px;margin-bottom:10px;font-size:.72rem;color:#e65100;line-height:1.55">
-      <strong>⚠️ Prima di importare:</strong> in Google Sheets vai su
-      <strong>File → Condividi → Pubblica sul Web</strong>, scegli il foglio
-      dei turni, formato <strong>CSV</strong>, poi clicca <em>Pubblica</em>.
-      Copia l'URL che appare e incollalo qui sotto.
+    <div style="background:#e8f5e9;border-radius:7px;padding:9px 11px;margin-bottom:10px;font-size:.72rem;color:#2e7d32;line-height:1.55">
+      <strong>Come fare:</strong> apri Google Sheets, vai su
+      <strong>File → Scarica → Valori separati da virgola (.csv)</strong>.
+      Poi seleziona il file scaricato qui sotto.
     </div>
 
-    <!-- Campo URL personalizzato -->
-    <div style="margin-bottom:8px">
-      <label style="font-size:.68rem;font-weight:700;color:#9e9e9e;display:block;margin-bottom:4px">URL foglio CSV (da "Pubblica sul Web")</label>
-      <input id="csvUrlInput" type="url"
-        style="width:100%;border:1.5px solid #e0e0e0;border-radius:7px;padding:7px 9px;font-size:.68rem;font-family:monospace;color:#424242;outline:none;background:#fafafa"
-        placeholder="https://docs.google.com/spreadsheets/d/…/pub?output=csv&gid=…"
-        oninput="saveCsvUrl(this.value)">
-      <p style="font-size:.62rem;color:#9e9e9e;margin-top:4px">💡 Puoi incollare qualsiasi link al foglio — l'app lo converte automaticamente nel formato CSV corretto.</p>
+    <!-- Campo file upload -->
+    <div style="margin-bottom:10px">
+      <label style="font-size:.68rem;font-weight:700;color:#9e9e9e;display:block;margin-bottom:6px">Seleziona file CSV</label>
+      <label id="csvFileLabel" style="display:flex;align-items:center;gap:8px;width:100%;border:1.5px dashed #90caf9;border-radius:8px;padding:12px 10px;background:#f3f8ff;cursor:pointer;font-size:.75rem;color:#1565c0;font-weight:600">
+        <span style="font-size:1.3rem">📎</span>
+        <span id="csvFileName">Tocca per scegliere il file…</span>
+        <input id="csvFileInput" type="file" accept=".csv,text/csv" style="display:none" onchange="onCsvFileChosen(this)">
+      </label>
     </div>
 
-    <button class="btn-import" onclick="importCSV()">
-      <span>⬇️</span> Importa &amp; Aggiorna Turni
+    <button class="btn-import" id="btnImport" onclick="importCSV()" disabled style="opacity:.5">
+      <span>⬆️</span> Carica &amp; Aggiorna Turni
     </button>
     <div class="import-status" id="importStatus"></div>
     <p style="font-size:.68rem;color:#bdbdbd;margin-top:8px">Le tue modifiche personali vengono mantenute durante l'import.</p>
@@ -357,46 +356,24 @@ const BASE_RAW = [
 ["01/02/27","E"],["02/02/27","E"],["03/02/27","E"],["04/02/27","R"],["05/02/27","E"],["06/02/27","E"]
 ];
 
-// URL pubblicato tramite "Pubblica sul Web" → CSV (non richiede login Google)
-const CSV_URL     = 'https://docs.google.com/spreadsheets/d/1AaMyftvbgDfcaNgum5mXY-cbAUqdO41tq_kktHwtjKU/export?format=csv&gid=1374162084';
-const CSV_URL_PUB = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vREjVV7PYSNXH51yMkE78NP8x9zLP3Rg5AwjETKCHQ0nTNIMrA2Zr2RgUZ4jWOOil9CtuPvRTSVXGBZ/pub?gid=1374162084&single=true&output=csv';
 const LS_BASE     = 'ivan_base_v2';
 const LS_OVRD     = 'ivan_overrides_v2';
 const LS_TS       = 'ivan_import_ts';
-const LS_CSVURL   = 'ivan_csv_url';
 
-// Converte URL Google Sheets (edit, view, share) → pub?output=csv
-// Se l'URL contiene già output=csv lo lascia invariato
-function normalizeCsvUrl(url) {
-  if (!url) return url;
-  // URL già valido (contiene output=csv o output=csv già nel path /pub)
-  if (url.includes('output=csv')) return url;
-  // URL di tipo /d/e/ (già pubblicato, ma senza output=csv — raro)
-  if (url.includes('/spreadsheets/d/e/')) return url;
-  // Converti URL edit/view → pub CSV usando l'ID documento
-  const m = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
-  if (!m) return url;
-  const id = m[1];
-  const gidM = url.match(/[?&#]gid=(\d+)/);
-  const gid = gidM ? gidM[1] : '0';
-  return `https://docs.google.com/spreadsheets/d/${id}/pub?output=csv&gid=${gid}`;
-}
-function saveCsvUrl(val) {
-  if(val && val.startsWith('http')) localStorage.setItem(LS_CSVURL, normalizeCsvUrl(val.trim()));
-  else localStorage.removeItem(LS_CSVURL);
-}
-function getEffectiveCsvUrl() {
-  return normalizeCsvUrl(localStorage.getItem(LS_CSVURL) || CSV_URL_PUB);
-}
-function initCsvUrlInput() {
-  let saved = localStorage.getItem(LS_CSVURL);
-  // Se l'URL salvato non contiene output=csv (es. URL di modifica), resettalo
-  if (saved && !saved.includes('output=csv') && !saved.includes('/d/e/')) {
-    localStorage.removeItem(LS_CSVURL);
-    saved = null;
-  }
-  const el = document.getElementById('csvUrlInput');
-  if(el) el.value = saved || '';
+// Gestione selezione file CSV
+let csvFileContent = null;
+function onCsvFileChosen(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('csvFileName').textContent = file.name;
+  document.getElementById('csvFileLabel').style.borderColor = '#43a047';
+  document.getElementById('csvFileLabel').style.background = '#f1f8e9';
+  const btn = document.getElementById('btnImport');
+  btn.disabled = false;
+  btn.style.opacity = '1';
+  const reader = new FileReader();
+  reader.onload = e => { csvFileContent = e.target.result; };
+  reader.readAsText(file, 'UTF-8');
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -656,7 +633,7 @@ function renderInfo() {
 async function importCSV() {
   const st=document.getElementById('importStatus');
   st.className='import-status loading';
-  st.textContent='⏳ Connessione al foglio Google…';
+  st.textContent='⏳ Lettura file CSV…';
   function parseCSVLine(line){
     const res=[]; let cur=''; let inQ=false;
     for(let i=0;i<line.length;i++){
@@ -667,38 +644,10 @@ async function importCSV() {
     }
     res.push(cur); return res;
   }
-  // Fetch helpers: tenta diretta + 2 proxy con l'URL scelto dall'utente
-  async function fetchCSV(primaryUrl) {
-    const isCSV = t => t && t.length > 50 && !t.trimStart().startsWith('<');
-
-    const attempts = [
-      { label:'⏳ Connessione diretta…',       fn: () => fetch(primaryUrl, {cache:'no-cache'}) },
-      { label:'⏳ Proxy 1 (corsproxy.io)…',    fn: () => fetch('https://corsproxy.io/?'+encodeURIComponent(primaryUrl), {cache:'no-cache'}) },
-      { label:'⏳ Proxy 2 (allorigins)…',      fn: () => fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(primaryUrl), {cache:'no-cache'}) },
-    ];
-
-    for(const {label, fn} of attempts) {
-      try {
-        st.textContent = label;
-        const resp = await fn();
-        if(!resp.ok) continue;
-        const text = await resp.text();
-        if(isCSV(text)) return text;
-      } catch(e) { /* prossimo tentativo */ }
-    }
-
-    throw new Error('Foglio non raggiungibile. Verifica l\'URL qui sopra (deve essere formato CSV "Pubblica sul Web") e riprova.');
-  }
 
   try {
-    st.textContent='⏳ Connessione al foglio Google…';
-    const userUrl = document.getElementById('csvUrlInput')?.value?.trim();
-    const rawUrl = (userUrl && userUrl.startsWith('http')) ? userUrl : getEffectiveCsvUrl();
-    const urlToUse = normalizeCsvUrl(rawUrl);
-    // Aggiorna sempre il campo con l'URL normalizzato (converti /edit → /pub?output=csv)
-    const urlInput = document.getElementById('csvUrlInput');
-    if(urlInput) { urlInput.value = urlToUse; saveCsvUrl(urlToUse); }
-    const text = await fetchCSV(urlToUse);
+    if (!csvFileContent) throw new Error('Nessun file selezionato. Tocca "Seleziona file CSV" e scegli il file.');
+    const text = csvFileContent;
     const lines = text.split('\n');
 
     // Find the row containing dates (DD/MM/YY pattern) — scan all rows
@@ -740,13 +689,7 @@ async function importCSV() {
   } catch(e) {
     st.className='import-status err';
     st.textContent=`❌ ${e.message}`;
-    // Assicura che il campo URL sia visibile e modificabile per correggere
-    const urlInput = document.getElementById('csvUrlInput');
-    if(urlInput) {
-      urlInput.style.borderColor='#ef5350';
-      urlInput.focus();
-      urlInput.style.borderColor='';
-    }
+    document.getElementById('csvFileLabel').style.borderColor='#ef5350';
   }
 }
 
@@ -894,7 +837,7 @@ function requestDelete() {
 // ══════════════════════════════════════════════════════════════
 loadData();
 renderCalendar();
-initCsvUrlInput();
+// initCsvUrlInput rimosso: ora si usa upload file CSV
 
 // ══════════════════════════════════════════════════════════════
 //  PWA – Service Worker & Install Banner
