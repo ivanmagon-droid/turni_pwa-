@@ -410,7 +410,8 @@ function saveBase() {
 }
 
 // Parse a raw CSV cell → { code, note }
-// Examples: "C" → {C,''}, "L Ok" → {L,''}, "Antincendio" → {C,'Antincendio'}, "PA" → {P,'PA'}
+// Examples: "C" → {C,''}, "L Ok" → {L,''}, "Antincendio" → {C,'Antincendio'}
+// "Esame antincendio 9-17" → {C,'Esame antincendio 9-17'}, "primo soccorso" → {C,'primo soccorso'}
 function parseRawShift(raw) {
   if (!raw) return { code:'', note:'' };
   const t = raw.trim();
@@ -418,13 +419,18 @@ function parseRawShift(raw) {
   const CODES = ['E','L','N','R','C','F','P','M'];
   const first = t[0].toUpperCase();
   if (CODES.includes(first)) {
-    const rest = t.slice(1).trim();
-    // Ignore trivial suffixes like "Ok", "OK"
-    if (!rest || rest.toLowerCase()==='ok') return { code:first, note:'' };
-    // Keep the rest as note (e.g. "PA" → {P,'PA'})
-    return { code:first, note:rest };
+    // Lettera singola: codice puro
+    if (t.length === 1) return { code:first, note:'' };
+    // Codice + spazio: "L Ok", "E OK", "C formazione specifica 06-14"
+    if (t[1] === ' ') {
+      const after = t.slice(2).trim();
+      if (!after || after.toLowerCase() === 'ok') return { code:first, note:'' };
+      return { code:first, note:after };
+    }
+    // Lettera codice seguita da altra lettera (es. "Esame", "primo", "PES/PAV")
+    // → è un testo/evento, non un turno: usa C + nota intera
   }
-  // Text doesn't start with a shift code (e.g. "Antincendio") → C shift + note
+  // Testo evento (es. "Antincendio", "DAE", "Esame antincendio 9-17")
   return { code:'C', note:t };
 }
 
@@ -675,15 +681,16 @@ async function importCSV() {
       const dt=dateRow[col].trim();
       if(!dt.match(/\d{2}\/\d{2}\/\d{2}/)) continue;
       const key=rawToKey(dt);
-      newBase[key]=(ivanRow[col]||'').trim();
+      const val=(ivanRow[col]||'').trim();
+      if(val) newBase[key]=val; // salva grezzo; parseRawShift lo interpreta a display-time
     }
     const count=Object.keys(newBase).length;
-    if(count<10) throw new Error('Troppo pochi dati: solo '+count+' giorni trovati');
+    if(count<10) throw new Error('Troppo pochi dati: solo '+count+' turni trovati');
     baseMap=newBase;
     saveBase();
     localStorage.setItem(LS_TS, Date.now().toString());
     st.className='import-status ok';
-    st.textContent=`✅ Importati ${count} giorni. Turni aggiornati!`;
+    st.textContent=`✅ Importati ${count} turni. Calendario aggiornato!`;
     renderCalendar();
     if(curTab===1) renderWeek();
   } catch(e) {
